@@ -17,10 +17,8 @@ def get_books_list():
         response = requests.get(url)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'lxml')
-        filter_books = soup.find_all('table', class_='d_book')
-        for i in filter_books:
-            y = str(i.find('a')).split()
-            link = urljoin('https://tululu.org/', y[1][7:-1])
+        for i in soup.select('table.d_book'):
+            link = urljoin('https://tululu.org/', str(i.select('a')).split()[1][7:-1])
             array.append(link)
     return array
 
@@ -55,14 +53,12 @@ def parse_book_page(response):
     book_title, author = title_tag.text.split('::')
     book_title = book_title.strip()
 
-    cover_image = soup.find('div', class_='bookimage').find('img')
+    cover_image = soup.select_one('div.bookimage img')
     cover_image_url = urljoin(response.url, cover_image['src'])
 
-    comments_tag = soup.find_all('div', class_='texts')
-    comments = '\n'.join([tag.find('span').text for tag in comments_tag])
+    comments = [tag.text for tag in soup.select('div.texts span')]
 
-    book_genre_tag = soup.find('span', class_='d_book').find_all('a')
-    book_genres = [tag.text for tag in book_genre_tag]
+    book_genres = [tag.text for tag in soup.select('span.d_book a')]
 
     return book_title, author, cover_image_url, comments, book_genres
 
@@ -98,7 +94,6 @@ def download_book_cover(url, filename, folder='Images/'):
 
 def main():
     connection_waiting_sec = 10
-    is_connected = True
     tries_to_connect = 5
     non_filter_books = get_books_list()
     non_filter_books_reduced = [b.split('/')[-2][1:] for b in non_filter_books]
