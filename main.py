@@ -16,6 +16,7 @@ def get_books_by_category(category, first_page, last_page):
         url = f'https://tululu.org/{category}/{page_num}/'
         response = requests.get(url)
         response.raise_for_status()
+        check_for_redirect(response)
         if response.history:
             print(f'Подготовка к скачиванию {page_num - first_page} страниц')
         soup = BeautifulSoup(response.text, 'lxml')
