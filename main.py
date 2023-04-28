@@ -44,10 +44,12 @@ def check_for_redirect(response):
 def make_parser():
     parser = argparse.ArgumentParser(description='Скрипт для скачивания книг с сайта tululu.org ')
     parser.add_argument('--first_page',
-                        help='С какой страницы начать скачивание',
+                        help='С какой страницы начать скачивание, по умолчанию - 25',
+                        defualt=25,
                         type=int)
     parser.add_argument('--last_page',
-                        help='Какой страницей закончить скачивание',
+                        help='Какой страницей закончить скачивание, по умолчанию - 75',
+                        default=75,
                         type=int)
     parser.add_argument('--category',
                         help='Категория, из которой нужно скачивать книги',
