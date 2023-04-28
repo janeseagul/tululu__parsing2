@@ -160,8 +160,6 @@ def main():
                     text_path = download_book_txt(book_id, book_txt_name, download_folder)
                 if not skip_img:
                     cover_path = download_book_cover(cover_image_url, cover_image_url.split('/')[-1], download_folder)
-                genres = book_genres
-                comments = book_comments
                 book = {
                     'title': book_title,
                     'author': author,
@@ -190,8 +188,8 @@ def main():
             tries_to_connect -= 1
 
         json_path = Path(f'{download_folder}/{sanitize_filename(json_folder)}')
-        with open(json_path, 'a', encoding='utf-8') as file:
-            json.dump(books_description, file, indent=True, ensure_ascii=False)
+    with open(json_path, 'a', encoding='utf-8') as file:
+        json.dump(books_description, file, indent=True, ensure_ascii=False)
 
 
 if __name__ == '__main__':
