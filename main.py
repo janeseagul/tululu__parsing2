@@ -13,16 +13,23 @@ import json
 def get_books_by_category(category, first_page, last_page):
     books_by_category = []
     for page_num in range(first_page, last_page + 1):
-        url = f'https://tululu.org/{category}/{page_num}/'
-        response = requests.get(url)
-        response.raise_for_status()
-        check_for_redirect(response)
-        if response.history:
-            print(f'Подготовка к скачиванию {page_num - first_page} страниц')
-        soup = BeautifulSoup(response.text, 'lxml')
-        for soup_item in soup.select('table.d_book'):
-            link = urljoin('https://tululu.org/', str(soup_item.select('a')).split()[1][7:-1])
-            books_by_category.append(link)
+        try:
+            url = f'https://tululu.org/{category}/{page_num}/'
+            response = requests.get(url)
+            response.raise_for_status()
+            check_for_redirect(response)
+            if response.history:
+                print(f'Подготовка к скачиванию {page_num - first_page} страниц')
+                soup = BeautifulSoup(response.text, 'lxml')
+            for soup_item in soup.select('table.d_book'):
+                link = urljoin('https://tululu.org/', str(soup_item.select('a')).split()[1][7:-1])
+                books_by_category.append(link)
+        except requests.ConnectionError:
+            print('Ошибка соединения')
+            continue
+        except requests.HTTPError:
+            print('Невозможно отобразить страницу')
+            continue
     return books_by_category
 
 
