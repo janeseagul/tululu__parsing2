@@ -10,17 +10,19 @@ import os
 import json
 
 
-def get_books_list(category, first, last):
-    array = []
-    for book in range(first, last + 1):
-        url = f'https://tululu.org/{category}/{book}/'
+def get_books_by_category(category, first_page, last_page):
+    books_by_category = []
+    for page_num in range(first_page, last_page + 1):
+        url = f'https://tululu.org/{category}/{page_num}/'
         response = requests.get(url)
         response.raise_for_status()
+        if response.history:
+            print(f'Подготовка к скачиванию {page_num - first_page} страниц')
         soup = BeautifulSoup(response.text, 'lxml')
-        for i in soup.select('table.d_book'):
-            link = urljoin('https://tululu.org/', str(i.select('a')).split()[1][7:-1])
-            array.append(link)
-    return array
+        for soup_item in soup.select('table.d_book'):
+            link = urljoin('https://tululu.org/', str(soup_item.select('a')).split()[1][7:-1])
+            books_by_category.append(link)
+    return books_by_category
 
 
 def get_book_page(book_id):
@@ -57,8 +59,12 @@ def make_parser():
                         help='Указать путь к json файлу',
                         type=argparse.FileType('w'),
                         default='info.json')
-    parser.add_argument('--skip_text', help='Укажите, чтобы не скачивать текст')
-    parser.add_argument('--skip_img', help='Укажите, чтобы не скачивать изображения')
+    parser.add_argument('--skip_text',
+                        help='Укажите, чтобы не скачивать текст',
+                        action='store_true')
+    parser.add_argument('--skip_img',
+                        help='Укажите, чтобы не скачивать изображения',
+                        action='store_true')
 
     return parser
 
@@ -74,7 +80,12 @@ def parse_book_page(response):
     comments = [tag.text for tag in soup.select('div.texts span')]
     book_genres = [tag.text for tag in soup.select('span.d_book a')]
 
-    return book_title, author, cover_image_url, comments, book_genres
+    return {'title': book_title,
+            'author': author,
+            'cover_link': cover_image_url,
+            'comments': comments,
+            'genres': book_genres,
+            }
 
 
 def download_book_txt(book_id, filename, folder='Books/', skip_text=False, download_folder=str(Path.cwd())):
@@ -108,35 +119,40 @@ def download_book_cover(url, filename, skip_img=False, folder='Images/', downloa
 
 
 def main():
+    connection_waiting_sec = 10
+    tries_to_connect = 5
     parser = make_parser()
     args = parser.parse_args()
+
     category = args.category
     first_page = args.first_page
     last_page = args.last_page
-    download_folder = str(args.download_folder)
-    json_folder = args.json_folder.name,
+    download_folder = Path(args.download_folder) if args.download_folder else Path.cwd()
+    json_folder = Path(args.json_folder) if args.json_folder else Path.cwd()
     skip_img = args.skip_img,
     skip_text = args.skip_text,
 
     book_category = category.split('/')[-2]
-    connection_waiting_sec = 10
-    tries_to_connect = 5
-    non_filter_books = get_books_list(book_category, first_page, last_page)
-    non_filter_books_reduced = [b.split('/')[-2][1:] for b in non_filter_books]
+
+    books_links = get_books_by_category(book_category, first_page, last_page)
+    book_id_nums = [b.split('/')[-1][1:] for b in books_links]
     books_description = []
-    for book_id in non_filter_books_reduced:
+    for book_id in book_id_nums:
         is_connected = True
-        number_of_tries = 5
-        while tries_to_connect > 0:
+        tries_to_connect = 5
+
+        while tries_to_connect:
             try:
-                response = get_book_page(book_id)
-                book_title, author, cover_image_url, book_comments, book_genres = parse_book_page(response)
+                book_response = get_book_page(book_id)
+                book_title, author, cover_image_url, book_comments, book_genres = parse_book_page(book_response)
                 book_txt_name = f'{book_id}. {book_title}'
-                text_path = download_book_txt(book_id, book_txt_name, skip_text, download_folder)
-                cover_path = download_book_cover(cover_image_url, cover_image_url.split('/')[-1], skip_img, download_folder)
+                if not skip_text:
+                    text_path = download_book_txt(book_id, book_txt_name, download_folder)
+                if not skip_img:
+                    cover_path = download_book_cover(cover_image_url, cover_image_url.split('/')[-1], download_folder)
                 genres = book_genres
                 comments = book_comments
-                book_describe = {
+                book = {
                     'title': book_title,
                     'author': author,
                     'img_src': cover_path,
@@ -145,7 +161,7 @@ def main():
                     'genres': genres,
                 }
                 if os.path.exists(text_path):
-                    books_description.append(book_describe)
+                    books_description.append(book)
                 break
             except requests.ConnectionError:
                 if is_connected:
@@ -158,7 +174,11 @@ def main():
             except requests.HTTPError:
                 print(f"Невозможно создать {book_txt_name}")
                 break
+            except ValueError as error:
+                print(f'Неожиданная ошибка: {error}')
+                print(f'Ошибка загрузки {book_txt_name}.')
             tries_to_connect -= 1
+
         json_path = Path(f'{download_folder}/{sanitize_filename(json_folder)}')
         with open(json_path, 'a', encoding='utf-8') as file:
             json.dump(books_description, file, indent=True, ensure_ascii=False)
