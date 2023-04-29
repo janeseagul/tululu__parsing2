@@ -1,3 +1,4 @@
+import time
 from time import sleep
 import sys
 import requests
@@ -8,6 +9,7 @@ from urllib.parse import urljoin
 import argparse
 import os
 import json
+from time import sleep
 
 
 def get_books_by_category(category, first_page, last_page):
@@ -18,15 +20,14 @@ def get_books_by_category(category, first_page, last_page):
             response = requests.get(url)
             response.raise_for_status()
             check_for_redirect(response)
-            if response.history:
-                print(f'Подготовка к скачиванию {page_num - first_page} страниц')
-                soup = BeautifulSoup(response.text, 'lxml')
             for soup_item in soup.select('table.d_book'):
                 link = urljoin('https://tululu.org/', str(soup_item.select('a')).split()[1][7:-1])
                 books_by_category.append(link)
         except requests.ConnectionError:
             print('Ошибка соединения')
+            time.sleep(5)
             continue
+
         except requests.HTTPError:
             print('Невозможно отобразить страницу')
             continue
@@ -138,7 +139,7 @@ def main():
     category = args.category
     first_page = args.first_page
     last_page = args.last_page
-    download_folder = args.download_folder 
+    download_folder = args.download_folder
     json_folder = args.json_folder
     skip_img = args.skip_img,
     skip_text = args.skip_text,
