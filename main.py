@@ -64,6 +64,7 @@ def make_parser():
                         default='https://tululu.org/l55/')
     parser.add_argument('--download_folder',
                         help='Папка, в которую скачивать файлы',
+                        defual='/Images'
                         type=str)
     parser.add_argument('--json_folder',
                         help='Указать путь к json файлу',
@@ -137,8 +138,8 @@ def main():
     category = args.category
     first_page = args.first_page
     last_page = args.last_page
-    download_folder = Path(args.download_folder) if args.download_folder else Path.cwd()
-    json_folder = Path(args.json_folder) if args.json_folder else Path.cwd()
+    download_folder = args.download_folder 
+    json_folder = args.json_folder
     skip_img = args.skip_img,
     skip_text = args.skip_text,
 
