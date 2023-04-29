@@ -110,9 +110,8 @@ def download_book_txt(book_id, filename, folder='Books/', skip_text=False, downl
     check_for_redirect(response)
 
     filepath = Path(download_folder, folder, sanitize_filename(filename))
-    if not skip_text:
-        with open(filepath, 'wb') as file:
-            file.write(response.content)
+    with open(filepath, 'wb') as file:
+        file.write(response.content)
     return str(filepath)
 
 
@@ -124,9 +123,8 @@ def download_book_cover(url, filename, skip_img=False, folder='Images/', downloa
     check_for_redirect(response)
 
     filepath = Path(download_folder, folder, sanitize_filename(filename))
-    if not skip_img:
-        with open(filepath, 'wb') as file:
-            file.write(response.content)
+    with open(filepath, 'wb') as file:
+        file.write(response.content)
     return str(filepath)
 
 
@@ -189,7 +187,7 @@ def main():
                 print(f'Ошибка загрузки {book_txt_name}.')
             tries_to_connect -= 1
 
-        json_path = Path(f'{download_folder}/{sanitize_filename(json_folder)}')
+    json_path = Path(f'{download_folder}/{sanitize_filename(json_folder)}')
     with open(json_path, 'a', encoding='utf-8') as file:
         json.dump(books_description, file, indent=True, ensure_ascii=False)
 
